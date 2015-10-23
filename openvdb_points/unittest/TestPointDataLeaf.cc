@@ -577,6 +577,18 @@ TestPointDataLeaf::testAttributes()
     CPPUNIT_ASSERT_THROW(constLeaf->typedAttributeArray<AttributeS>(/*pos=*/2), openvdb::LookupError);
     CPPUNIT_ASSERT_THROW(constLeaf->typedAttributeArray<AttributeS>("test"), openvdb::LookupError);
 
+    // check binding of AttributeHandles
+
+    {
+        AttributeHandle<openvdb::Vec3f> handle;
+
+        CPPUNIT_ASSERT(!handle.isBound());
+
+        handle.bind(leaf, /*pos=*/0);
+
+        CPPUNIT_ASSERT(handle.isBound());
+    }
+
     // check memory usage = attribute set + base leaf
 
     leaf.initializeAttributes(descrA, /*arrayLength=*/100);

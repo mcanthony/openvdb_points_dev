@@ -420,11 +420,22 @@ protected:
 public:
     static Ptr create(const AttributeArray& array, const bool preserveCompression = true);
 
-    AttributeHandle(const AttributeArray& array, const bool preserveCompression = true);
+    AttributeHandle();
+    explicit AttributeHandle(const AttributeArray& array, const bool preserveCompression = true);
+
+    template <typename LeafType>
+    void bind(const LeafType& leaf, const size_t index, const bool preserveCompression = true);
+
+    void reset();
+
+    bool isBound() const;
 
     T get(Index n) const;
 
 protected:
+    void bindArray(const AttributeArray& array, const bool preserveCompression = true);
+    void bindFunctors(const AttributeArray& array);
+
     const AttributeArray* mArray;
 
     GetterPtr mGetter;
@@ -445,7 +456,7 @@ public:
 
     static Ptr create(AttributeArray& array);
 
-    AttributeWriteHandle(AttributeArray& array);
+    explicit AttributeWriteHandle(AttributeArray& array);
 
     void set(Index n, const T& value);
 }; // class AttributeWriteHandle
@@ -1017,9 +1028,35 @@ AttributeHandle<T>::create(const AttributeArray& array, const bool preserveCompr
 }
 
 template <typename T>
+AttributeHandle<T>::AttributeHandle()
+    : mArray(NULL) { }
+
+template <typename T>
 AttributeHandle<T>::AttributeHandle(const AttributeArray& array, const bool preserveCompression)
-    : mArray(&array)
+    : mArray(NULL)
 {
+    this->bindArray(array, preserveCompression);
+    this->bindFunctors(array);
+}
+
+template <typename T>
+template <typename LeafType>
+void AttributeHandle<T>::bind(const LeafType& leaf, const size_t index, const bool preserveCompression)
+{
+    const AttributeArray* array = leaf.template attributeArray(index);
+
+    this->bindArray(*array, preserveCompression);
+
+    // only bind the functors if they are not already set
+
+    if (!mGetter || !mSetter)   this->bindFunctors(*array);
+}
+
+template <typename T>
+void AttributeHandle<T>::bindArray(const AttributeArray& array, const bool preserveCompression)
+{
+    mArray = &array;
+
     // if array is compressed and preserve compression is true, copy and decompress
     // into a local copy that is destroyed with handle to maintain thread-safety
 
@@ -1028,10 +1065,14 @@ AttributeHandle<T>::AttributeHandle(const AttributeArray& array, const bool pres
         mLocalArray->decompress();
         mArray = mLocalArray.get();
     }
+}
 
+template <typename T>
+void AttributeHandle<T>::bindFunctors(const AttributeArray& array)
+{
     // bind getter and setter methods
 
-    AttributeArray::AccessorBasePtr accessor = mArray->getAccessor();
+    AttributeArray::AccessorBasePtr accessor = array.getAccessor();
     assert(accessor);
 
     AttributeArray::Accessor<T>* typedAccessor = static_cast<AttributeArray::Accessor<T>*>(accessor.get());
@@ -1044,10 +1085,31 @@ AttributeHandle<T>::AttributeHandle(const AttributeArray& array, const bool pres
     mSetter = typedAccessor->mSetter;
 }
 
+template <typename T>
+void AttributeHandle<T>::reset()
+{
+    // release array data
+
+    mArray = NULL;
+    //mLocalArray.release();
+
+    // release functors
+
+    //mGetter.release();
+    //mSetter.release();
+}
+
+template <typename T>
+bool AttributeHandle<T>::isBound() const
+{
+    return mArray != NULL;
+}
 
 template <typename T>
 T AttributeHandle<T>::get(Index n) const
 {
+    assert(mArray);
+
     return mGetter(mArray, n);
 }
 
@@ -1069,6 +1131,8 @@ AttributeWriteHandle<T>::AttributeWriteHandle(AttributeArray& array)
 template <typename T>
 void AttributeWriteHandle<T>::set(Index n, const T& value)
 {
+    assert(mArray);
+
     this->mSetter(const_cast<AttributeArray*>(this->mArray), n, value);
 }
 

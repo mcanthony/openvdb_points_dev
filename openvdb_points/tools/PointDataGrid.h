@@ -347,53 +347,31 @@ public:
     template <typename AttributeType>
     typename AttributeWriteHandle<AttributeType>::Ptr attributeWriteHandle(const size_t pos)
     {
-        if (pos >= mAttributeSet->size())             OPENVDB_THROW(LookupError, "Attribute Out Of Range");
-
-        AttributeArray* array = mAttributeSet->get(pos);
-
-        return AttributeWriteHandle<AttributeType>::create(*array);
+        return AttributeWriteHandle<AttributeType>::create(*attributeArray(pos));
     }
 
     template <typename AttributeType>
     typename AttributeWriteHandle<AttributeType>::Ptr attributeWriteHandle(const Name& attributeName)
     {
-        const size_t pos = mAttributeSet->find(attributeName);
-
-        if (pos == AttributeSet::INVALID_POS)         OPENVDB_THROW(LookupError, "Attribute Not Found");
-
-        AttributeArray* array = mAttributeSet->get(pos);
-
-        return AttributeWriteHandle<AttributeType>::create(*array);
+        return AttributeWriteHandle<AttributeType>::create(*attributeArray(attributeName));
     }
 
     template <typename AttributeType>
     typename AttributeHandle<AttributeType>::Ptr attributeHandle(const size_t pos) const
     {
-        if (pos >= mAttributeSet->size())             OPENVDB_THROW(LookupError, "Attribute Out Of Range");
-
-        AttributeArray* array = mAttributeSet->get(pos);
-
-        return AttributeHandle<AttributeType>::create(*array);
+        return AttributeHandle<AttributeType>::create(*attributeArray(pos));
     }
 
     template <typename AttributeType>
     typename AttributeHandle<AttributeType>::Ptr attributeHandle(const Name& attributeName) const
     {
-        const size_t pos = mAttributeSet->find(attributeName);
-
-        if (pos == AttributeSet::INVALID_POS)         OPENVDB_THROW(LookupError, "Attribute Not Found");
-
-        AttributeArray* array = mAttributeSet->get(pos);
-
-        return AttributeHandle<AttributeType>::create(*array);
+        return AttributeHandle<AttributeType>::create(*attributeArray(attributeName));
     }
 
     template <typename TypedAttributeType>
     TypedAttributeType& typedAttributeArray(const size_t pos)
     {
-        if (pos >= mAttributeSet->size())             OPENVDB_THROW(LookupError, "Attribute Out Of Range");
-
-        AttributeArray* array = mAttributeSet->get(pos);
+        AttributeArray* array = attributeArray(pos);
 
         if (!array->isType<TypedAttributeType>())     OPENVDB_THROW(LookupError, "Invalid Attribute Type");
 
@@ -403,11 +381,7 @@ public:
     template <typename TypedAttributeType>
     TypedAttributeType& typedAttributeArray(const Name& attributeName)
     {
-        const size_t pos = mAttributeSet->find(attributeName);
-
-        if (pos == AttributeSet::INVALID_POS)         OPENVDB_THROW(LookupError, "Attribute Not Found");
-
-        AttributeArray* array = mAttributeSet->get(pos);
+        AttributeArray* array = attributeArray(attributeName);
 
         if (!array->isType<TypedAttributeType>())     OPENVDB_THROW(LookupError, "Invalid Attribute Type");
 
@@ -417,9 +391,7 @@ public:
     template <typename TypedAttributeType>
     const TypedAttributeType& typedAttributeArray(const size_t pos) const
     {
-        if (pos >= mAttributeSet->size())             OPENVDB_THROW(LookupError, "Attribute Out Of Range");
-
-        const AttributeArray* array = mAttributeSet->getConst(pos);
+        const AttributeArray* array = attributeArray(pos);
 
         if (!array->isType<TypedAttributeType>())     OPENVDB_THROW(LookupError, "Invalid Attribute Type");
 
@@ -429,15 +401,45 @@ public:
     template <typename TypedAttributeType>
     const TypedAttributeType& typedAttributeArray(const Name& attributeName) const
     {
-        const size_t pos = mAttributeSet->find(attributeName);
-
-        if (pos == AttributeSet::INVALID_POS)         OPENVDB_THROW(LookupError, "Attribute Not Found");
-
-        const AttributeArray* array = mAttributeSet->getConst(pos);
+        const AttributeArray* array = attributeArray(attributeName);
 
         if (!array->isType<TypedAttributeType>())     OPENVDB_THROW(LookupError, "Invalid Attribute Type");
 
         return static_cast<const TypedAttributeType& >(*array);
+    }
+
+    /// @todo - investigate if these can be private
+
+    AttributeArray* attributeArray(const size_t pos)
+    {
+        if (pos >= mAttributeSet->size())             OPENVDB_THROW(LookupError, "Attribute Out Of Range");
+
+        return mAttributeSet->get(pos);
+    }
+
+    const AttributeArray* attributeArray(const size_t pos) const
+    {
+        if (pos >= mAttributeSet->size())             OPENVDB_THROW(LookupError, "Attribute Out Of Range");
+
+        return mAttributeSet->getConst(pos);
+    }
+
+    AttributeArray* attributeArray(const Name& attributeName)
+    {
+        const size_t pos = mAttributeSet->find(attributeName);
+
+        if (pos == AttributeSet::INVALID_POS)         OPENVDB_THROW(LookupError, "Attribute Not Found");
+
+        return mAttributeSet->get(pos);
+    }
+
+    const AttributeArray* attributeArray(const Name& attributeName) const
+    {
+        const size_t pos = mAttributeSet->find(attributeName);
+
+        if (pos == AttributeSet::INVALID_POS)         OPENVDB_THROW(LookupError, "Attribute Not Found");
+
+        return mAttributeSet->getConst(pos);
     }
 
     ValueTypePair pointIndex(const unsigned index) const
